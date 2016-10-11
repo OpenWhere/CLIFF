@@ -13,6 +13,10 @@
          <servlet-name>ParseTextServlet</servlet-name>
          <url-pattern>/parse/text</url-pattern>
      </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ParseTextServlet</servlet-name>
+        <url-pattern>/cliff/parse/text</url-pattern>
+    </servlet-mapping>
 
      <servlet>
          <servlet-name>ParseNlpJsonServlet</servlet-name>
@@ -22,6 +26,10 @@
          <servlet-name>ParseNlpJsonServlet</servlet-name>
          <url-pattern>/parse/json</url-pattern>
      </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ParseNlpJsonServlet</servlet-name>
+        <url-pattern>/cliff/parse/json</url-pattern>
+    </servlet-mapping>
 
      <servlet>
          <servlet-name>ParseSentencesServlet</servlet-name>
@@ -31,6 +39,10 @@
          <servlet-name>ParseSentencesServlet</servlet-name>
          <url-pattern>/parse/sentences</url-pattern>
      </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ParseSentencesServlet</servlet-name>
+        <url-pattern>/cliff/parse/sentences</url-pattern>
+    </servlet-mapping>
 
      <servlet>
          <servlet-name>GeonamesLookupServlet</servlet-name>
@@ -49,6 +61,23 @@
          <servlet-name>ExtractTextServlet</servlet-name>
          <url-pattern>/extract</url-pattern>
      </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ExtractTextServlet</servlet-name>
+        <url-pattern>/cliff/extract</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>HealthServlet</servlet-name>
+        <servlet-class>org.mediameter.cliff.servlet.HealthServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>HealthServlet</servlet-name>
+        <url-pattern>/</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>HealthServlet</servlet-name>
+        <url-pattern>/cliff/</url-pattern>
+    </servlet-mapping>
      
 
  </web-app>

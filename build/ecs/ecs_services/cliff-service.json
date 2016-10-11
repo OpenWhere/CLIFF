@@ -1,5 +1,13 @@
 {
-  "serviceName": "cliff-service",
+  "serviceName": "cliff-CLUSTER",
   "taskDefinition": "cliff",
-  "desiredCount": 2
+  "desiredCount": 2,
+  "loadBalancers": [
+    {
+      "loadBalancerName": "ecs-elb-CLUSTER",
+      "containerName": "cliff",
+      "containerPort": 8080
+    }
+  ],
+  "role": "ecsServiceRole-CLUSTER"
 }
