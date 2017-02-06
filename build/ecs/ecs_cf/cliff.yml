@@ -1,0 +1,145 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: ECS Service and Task definition
+Parameters:
+  cluster:
+    Description: ECS service resources.
+    Type: String
+  env:
+    Description: ECS Cluster name i.e. core-dev.
+    Type: String
+  listenerarn:
+    Description: Arn of ELB listener to attach service to
+    Type: String
+  name:
+    Description: Service Name i.e. jobmanager
+    Type: String
+  priority:
+    Description: Service Name i.e. jobmanager
+    Type: Number
+  region:
+    Description: AWS region i.e. us-east-1
+    Type: String
+  vpcid:
+    Description: ID of the VPC for the service
+    Type: String
+  version:
+    Description: Semantic version of service
+    Type: String
+  namespace:
+    Description: Docker namespace
+    Type: String
+
+Resources:
+  CustomResource:
+    Type: Custom::CustomResource
+    DependsOn:  ListenerRule
+    Properties:
+      ServiceToken:
+        Fn::ImportValue:
+          !Sub ${env}-LambdaStringFunctionArn
+      ALBArn: !GetAtt TargetGroup.LoadBalancerArns
+      TGTArn: !Ref TargetGroup
+
+  EcsService:
+    DependsOn: ListenerRule
+    Type: "AWS::ECS::Service"
+    Properties:
+      Cluster:  !Ref cluster
+      DesiredCount: 2
+      LoadBalancers:
+        -
+          TargetGroupArn: !Ref TargetGroup
+          ContainerName:  !Ref name
+          ContainerPort: 8080
+      Role: !Sub ecsServiceRole-${cluster}
+      TaskDefinition:  !Ref EcsTask
+
+  EcsTask:
+    DependsOn: TargetGroup
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+        -
+          Cpu: 512
+          VolumesFrom:
+          -
+            SourceContainer: clavin
+          Essential: true
+          Image: !Sub 639193537090.dkr.ecr.us-east-1.amazonaws.com/${namespace}/cliff:${version}
+          Memory: 6144
+          PortMappings:
+            -
+              HostPort: 0
+              ContainerPort: 8080
+              Protocol: tcp
+          Name: !Ref name
+        -
+          Cpu: 64
+          Essential: true
+          Image: !Sub 639193537090.dkr.ecr.us-east-1.amazonaws.com/${namespace}/clavin:new
+          Memory: 25
+          Name: clavin
+      Family: !Ref name
+      Volumes: []
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckPath: /
+      Port: 8080
+      Protocol: HTTP
+      Tags:
+        - Key: ServiceName
+          Value: !Ref name
+        - Key: ClusterName
+          Value: !Ref cluster
+      VpcId:  !Ref vpcid
+
+  HealthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Notify SNS if there are no healthy hosts
+      MetricName: HealthyHostCount
+      Namespace: AWS/ApplicationELB
+      Statistic: Average
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 0.0
+      AlarmActions:
+        - Fn::ImportValue: !Sub ${env}-ServiceHealthTopic
+      ComparisonOperator: LessThanOrEqualToThreshold
+      Dimensions:
+        -
+          Name: TargetGroup
+          Value:  !GetAtt CustomResource.TGTId
+        -
+          Name: LoadBalancer
+          Value:  !GetAtt CustomResource.ALBId
+
+  ListenerRule:
+    DependsOn: EcsTask
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - !Sub /${name}/*
+      ListenerArn: !Ref listenerarn
+      Priority: !Ref priority
+
+Outputs:
+  ALBId:
+    Description: ALBId
+    Value:
+      Fn::GetAtt:
+      - CustomResource
+      - ALBId
+  TGTId:
+    Description: TGTId
+    Value:
+      Fn::GetAtt:
+      - CustomResource
+      - TGTId

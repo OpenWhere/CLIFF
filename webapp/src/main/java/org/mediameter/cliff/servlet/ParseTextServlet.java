@@ -71,8 +71,10 @@ public class ParseTextServlet extends HttpServlet{
             String line = null;
             request.setCharacterEncoding(StandardCharsets.UTF_8.name());
             try(BufferedReader reader = request.getReader()) {
-                while ((line = reader.readLine()) != null)
+                while ((line = reader.readLine()) != null) {
                     jb.append(line);
+                    jb.append(".\n");
+                }
             } catch (Exception e) {
                 logger.error(e.toString());
                 HashMap results = ParseManager.getErrorText(e.toString());

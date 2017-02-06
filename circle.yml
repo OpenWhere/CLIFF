@@ -3,6 +3,8 @@ machine:
     - docker
   java:
     version: oraclejdk8
+  post:
+    - aws configure set default.region us-east-1
 
 test:
     override:
@@ -24,65 +26,12 @@ deployment:
   dev:
     branch: develop
     commands:
-      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASSWORD
-      - docker build -t cliff .:
-          timeout: 1200
-      - DOCKER_VERSION=`docker --version | cut -f3 | cut -d '.' -f2` && [ ${DOCKER_VERSION} -lt 12 ] && TAG_FLAG='-f' || TAG_FLAG='' && docker tag ${TAG_FLAG} cliff openwhere/cliff:dev
-      - docker push openwhere/cliff:dev:
-          timeout: 1200
-      - docker pull openwhere/ecs-deploy:v1.1
-      - docker run --volume ~/.aws:/root/.aws --volume ${PWD}/build/ecs:/usr/src/app/ecs openwhere/ecs-deploy:v1.1 ./ecsUpdate.py --cluster analytics-dev --env dev --region us-east-1
+      - $(aws ecr get-login)
+      - VERSION=`git rev-parse --short HEAD` && build/build-docker.sh ${VERSION} ${CIRCLE_BRANCH}
+      - VERSION=`git rev-parse --short HEAD` && docker run --volume ~/.aws:/root/.aws --volume ${PWD}/build/ecs/ecs_cf:/usr/src/app/ecs/ecs 639193537090.dkr.ecr.us-east-1.amazonaws.com/release/ecs-deploy ./cfUpdate.py --cfparams --cluster analytics-${DEV_ENV_NAME} --env ${DEV_ENV_NAME} --region ${DEV_REGION} --version ${VERSION} --namespace ${CIRCLE_BRANCH}
   sit:
     branch: master 
     commands:
-      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASSWORD
-      - docker build -t cliff .:
-          timeout: 1200
-      - VERSION=`git rev-parse --short HEAD` && DOCKER_VERSION=`docker --version | cut -f3 | cut -d '.' -f2` && [ ${DOCKER_VERSION} -lt 12 ] && TAG_FLAG='-f' || TAG_FLAG='' && docker tag ${TAG_FLAG} cliff openwhere/cliff:${VERSION}
-      - VERSION=`git rev-parse --short HEAD` && DOCKER_VERSION=`docker --version | cut -f3 | cut -d '.' -f2` && [ ${DOCKER_VERSION} -lt 12 ] && TAG_FLAG='-f' || TAG_FLAG='' && docker tag ${TAG_FLAG} openwhere/cliff:${VERSION} openwhere/cliff:$SIT_ENV_NAME
-      - VERSION=`git rev-parse --short HEAD` && docker push openwhere/cliff:${VERSION}:
-          timeout: 1000
-      - docker push openwhere/cliff:$SIT_ENV_NAME:
-          timeout: 1000
-      - docker pull openwhere/ecs-deploy:v1.1
-      - docker run --volume ${PWD}/build/ecs:/usr/src/app/ecs -e AWS_ACCESS_KEY_ID=$SIT_AWS_KEY -e AWS_SECRET_ACCESS_KEY=$SIT_AWS_SECRET openwhere/ecs-deploy:v1.1 ./ecsUpdate.py --cluster analytics-$SIT_ENV_NAME --env $SIT_ENV_NAME --region $SIT_REGION
-  release:
-     tag: /release-.*/
-     owner: OpenWhere
-     commands:
-       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASSWORD
-       - docker build -t cliff .:
-          timeout: 1200
-       - DOCKER_VERSION=`docker --version | cut -f3 | cut -d '.' -f2` && [ ${DOCKER_VERSION} -lt 12 ] && TAG_FLAG='-f' || TAG_FLAG='' && docker tag ${TAG_FLAG} cliff openwhere/cliff:${CIRCLE_TAG} 
-       - DOCKER_VERSION=`docker --version | cut -f3 | cut -d '.' -f2` && [ ${DOCKER_VERSION} -lt 12 ] && TAG_FLAG='-f' || TAG_FLAG='' && docker tag ${TAG_FLAG} openwhere/cliff:${CIRCLE_TAG} openwhere/cliff:expo
-       - docker push openwhere/cliff:${CIRCLE_TAG}:
-          timeout: 1000
-       - docker push openwhere/cliff:expo:
-          timeout: 1000
-       - docker run --volume ~/.aws:/root/.aws --volume ${PWD}/build/ecs:/usr/src/app/ecs openwhere/ecs-deploy:v1.1 ./ecsUpdate.py --cluster analytics-expo --env expo --region us-east-1
-  pgp:
-     tag: /pgp-.*/
-     owner: OpenWhere
-     commands:
-       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASSWORD
-       - docker build -t cliff .:
-          timeout: 1200
-       - DOCKER_VERSION=`docker --version | cut -f3 | cut -d '.' -f2` && [ ${DOCKER_VERSION} -lt 12 ] && TAG_FLAG='-f' || TAG_FLAG='' && docker tag ${TAG_FLAG} cliff openwhere/cliff:${CIRCLE_TAG} 
-       - DOCKER_VERSION=`docker --version | cut -f3 | cut -d '.' -f2` && [ ${DOCKER_VERSION} -lt 12 ] && TAG_FLAG='-f' || TAG_FLAG='' && docker tag ${TAG_FLAG} openwhere/cliff:${CIRCLE_TAG} openwhere/cliff:pgp
-       - docker push openwhere/cliff:${CIRCLE_TAG}:
-          timeout: 1000
-       - docker push openwhere/cliff:pgp:
-          timeout: 1000
-  expobsg:
-     tag: /expobsg-.*/
-     owner: OpenWhere
-     commands:
-       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASSWORD
-       - docker build -t cliff .:
-          timeout: 1200
-       - DOCKER_VERSION=`docker --version | cut -f3 | cut -d '.' -f2` && [ ${DOCKER_VERSION} -lt 12 ] && TAG_FLAG='-f' || TAG_FLAG='' && docker tag ${TAG_FLAG} cliff openwhere/cliff:${CIRCLE_TAG}
-       - DOCKER_VERSION=`docker --version | cut -f3 | cut -d '.' -f2` && [ ${DOCKER_VERSION} -lt 12 ] && TAG_FLAG='-f' || TAG_FLAG='' && docker tag ${TAG_FLAG} openwhere/cliff:${CIRCLE_TAG} openwhere/cliff:expobsg
-       - docker push openwhere/cliff:${CIRCLE_TAG}:
-          timeout: 1000
-       - docker push openwhere/cliff:expobsg:
-          timeout: 1000
+      - $(aws ecr get-login)
+      - VERSION=`git rev-parse --short HEAD` && build/build-docker.sh ${VERSION} ${CIRCLE_BRANCH}
+      - VERSION=`git rev-parse --short HEAD` && docker run --volume ~/.aws:/root/.aws --volume ${PWD}/build/ecs/ecs_cf:/usr/src/app/ecs/ecs -e AWS_ACCESS_KEY_ID=${SIT_AWS_KEY} -e AWS_SECRET_ACCESS_KEY=${SIT_AWS_SECRET} 639193537090.dkr.ecr.us-east-1.amazonaws.com/release/ecs-deploy ./cfUpdate.py --cfparams --cluster analytics-${SIT_ENV_NAME} --env ${SIT_ENV_NAME} --region ${SIT_REGION} --version ${VERSION} --namespace ${CIRCLE_BRANCH}
