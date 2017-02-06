@@ -128,7 +128,7 @@ Resources:
           Values:
             - !Sub /${name}/*
       ListenerArn: !Ref listenerarn
-      Priority: !Ref priority
+      Priority: 18
 
 Outputs:
   ALBId:
