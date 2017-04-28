@@ -27,11 +27,11 @@ deployment:
     branch: develop
     commands:
       - $(aws ecr get-login)
-      - VERSION=`git rev-parse --short HEAD` && build/build-docker.sh ${VERSION} ${CIRCLE_BRANCH}
-      - VERSION=`git rev-parse --short HEAD` && docker run --volume ~/.aws:/root/.aws --volume ${PWD}/build/ecs/ecs_cf:/usr/src/app/ecs/ecs 639193537090.dkr.ecr.us-east-1.amazonaws.com/release/ecs-deploy ./cfUpdate.py --cfparams --cluster analytics-${DEV_ENV_NAME} --env ${DEV_ENV_NAME} --region ${DEV_REGION} --version ${VERSION} --namespace ${CIRCLE_BRANCH}
+      - export VERSION=${CIRCLE_BUILD_NUM}_${CIRCLE_SHA1} && build/build-docker.sh ${VERSION} ${CIRCLE_BRANCH}
+      - export VERSION=${CIRCLE_BUILD_NUM}_${CIRCLE_SHA1} && docker run --volume ~/.aws:/root/.aws --volume ${PWD}/build/ecs/ecs_cf:/usr/src/app/ecs/ecs 639193537090.dkr.ecr.us-east-1.amazonaws.com/release/ecs-deploy ./cfUpdate.py --cfparams --cluster analytics-${DEV_ENV_NAME} --env ${DEV_ENV_NAME} --region ${DEV_REGION} --version ${VERSION} --namespace ${CIRCLE_BRANCH}
   sit:
     branch: master 
     commands:
       - $(aws ecr get-login)
-      - VERSION=`git rev-parse --short HEAD` && build/build-docker.sh ${VERSION} ${CIRCLE_BRANCH}
-      - VERSION=`git rev-parse --short HEAD` && docker run --volume ~/.aws:/root/.aws --volume ${PWD}/build/ecs/ecs_cf:/usr/src/app/ecs/ecs -e AWS_ACCESS_KEY_ID=${SIT_AWS_KEY} -e AWS_SECRET_ACCESS_KEY=${SIT_AWS_SECRET} 639193537090.dkr.ecr.us-east-1.amazonaws.com/release/ecs-deploy ./cfUpdate.py --cfparams --cluster analytics-${SIT_ENV_NAME} --env ${SIT_ENV_NAME} --region ${SIT_REGION} --version ${VERSION} --namespace ${CIRCLE_BRANCH}
+      - VERSION=${CIRCLE_BUILD_NUM}_${CIRCLE_SHA1} && build/build-docker.sh ${VERSION} ${CIRCLE_BRANCH}
+      - VERSION=${CIRCLE_BUILD_NUM}_${CIRCLE_SHA1} && docker run --volume ~/.aws:/root/.aws --volume ${PWD}/build/ecs/ecs_cf:/usr/src/app/ecs/ecs -e AWS_ACCESS_KEY_ID=${SIT_AWS_KEY} -e AWS_SECRET_ACCESS_KEY=${SIT_AWS_SECRET} 639193537090.dkr.ecr.us-east-1.amazonaws.com/release/ecs-deploy ./cfUpdate.py --cfparams --cluster analytics-${SIT_ENV_NAME} --env ${SIT_ENV_NAME} --region ${SIT_REGION} --version ${VERSION} --namespace ${CIRCLE_BRANCH}
